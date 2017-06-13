@@ -1,0 +1,4 @@
+
+[run]
+source = adsputils
+omit = adsputils/tests*
