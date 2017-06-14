@@ -17,6 +17,28 @@ from cloghandler import ConcurrentRotatingFileHandler
 local_zone = tz.tzlocal()
 utc_zone = tz.tzutc()
 
+
+def _get_proj_home():
+    """Get the location of the caller module; then go up max_levels until
+    finding requirements.txt"""
+     
+    frame = inspect.stack()[2]
+    module = inspect.getsourcefile(frame[0])
+    if not module:
+        raise Exception("Sorry, wasnt able to guess your location. Let devs know about this issue.")
+    d = os.path.dirname(module)
+    x = d
+    max_level = 3
+    while max_level:
+        f = os.path.abspath(os.path.join(x, 'requirements.txt'))
+        if os.path.exists(f):
+            return x
+        x = os.path.abspath(os.path.join(x, '..'))
+    sys.stderr.write("Sorry, cant find the proj home; returning the location of the caller")
+    return d
+        
+
+
 def get_date(timestr=None):
     """
     Always parses the time to be in the UTC time zone; or returns
@@ -72,11 +94,7 @@ def load_config(proj_home=None):
         if not os.path.exists(proj_home):
             raise Exception('{proj_home} doesnt exist'.format(proj_home=proj_home))
     else:
-        frame = inspect.stack()[1]
-        module = inspect.getsourcefile(frame[0])
-        if not module:
-            raise Exception("Sorry, wasnt able to guess your location. Let devs know this issue.")
-        proj_home = os.path.abspath(os.path.join(os.path.dirname(module), '..'))
+        proj_home = _get_proj_home()
         
         
     if proj_home not in sys.path:
@@ -133,11 +151,7 @@ def setup_logging(name_, level='WARN', proj_home=None):
         proj_home = os.path.abspath(proj_home)
         fn_path = os.path.join(proj_home, 'logs')
     else:
-        frame = inspect.stack()[1]
-        module = inspect.getsourcefile(frame[0])
-        if not module:
-            raise Exception("Sorry, wasnt able to guess your location. Let devs know this issue.")
-        fn_path = os.path.join(os.path.abspath(os.path.join(os.path.dirname(module), '../..')), 'logs')
+        fn_path = os.path.join(_get_proj_home(), 'logs')
         
     if not os.path.exists(fn_path):
         os.makedirs(fn_path)

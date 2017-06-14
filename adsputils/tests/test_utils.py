@@ -27,7 +27,7 @@ class TestAdsOrcidCelery(unittest.TestCase):
     def test_load_config(self):
         with patch('adsputils.load_module') as load_module:
             c = adsputils.load_config()
-            f = os.path.dirname(inspect.getsourcefile(adsputils))
+            f = os.path.abspath(os.path.join(os.path.dirname(inspect.getsourcefile(adsputils)), '..'))
             self.assertEquals((f + '/config.py',), 
                               load_module.call_args_list[0][0])
             self.assertEquals((f + '/local_config.py',), 
