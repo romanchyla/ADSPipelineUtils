@@ -29,7 +29,7 @@ class TestAdsOrcidCelery(unittest.TestCase):
         serialization.unregister('adsmsg')
         
     
-    def xtest_serializer(self):
+    def test_serializer(self):
         b = BibRecord(bibcode='bibcode')
         cls, data = b.dump()
         
@@ -39,12 +39,8 @@ class TestAdsOrcidCelery(unittest.TestCase):
         
         # dump using default 'json' serializer
         content_type, encoding, data = serialization.dumps(b)
-        self.assertEqual('{"__adsmsg__": ["adsmsg.bibrecord.BibRecord", "\\n\\u0007bibcode"]}',
+        self.assertEqual('{"__adsmsg__": ["adsmsg.bibrecord.BibRecord", "CgdiaWJjb2Rl"]}',
                          data)
-        
-        # load using default 'json' deserializer
-        self.assertEqual(serialization.loads(data, content_type, encoding),
-                         {u'__adsmsg__': [u'adsmsg.bibrecord.BibRecord', u'\n\x07bibcode']})
         
         # load using our deserializer
         o = serialization.loads(data, 'application/x-adsmsg', encoding)
@@ -60,7 +56,8 @@ class TestAdsOrcidCelery(unittest.TestCase):
         for x in (o[0]['foo'], o[1], o[2][0][0]):
             self.assertTrue(isinstance(x, BibRecord))
             self.assertEqual(x.bibcode, "bibcode")
-    
+
+
     def test_utf8(self):
         b = BibRecord(bibcode=u'\u01b5')
         ctype, enc, data = serialization.dumps(b)
