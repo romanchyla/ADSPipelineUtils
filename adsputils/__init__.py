@@ -102,6 +102,11 @@ def load_config(proj_home=None):
             
     conf['PROJ_HOME'] = proj_home
     
+    # all of our workers should use 'adsmsg' serializer by default; 'json' is backup
+    conf['CELERY_ACCEPT_CONTENT'] = ['adsmsg', 'json']
+    conf['CELERY_TASK_SERIALIZER'] = 'adsmsg'
+    conf['CELERY_RESULT_SERIALIZER'] = 'adsmsg'
+    
     conf.update(load_module(os.path.join(proj_home, 'config.py')))
     conf.update(load_module(os.path.join(proj_home, 'local_config.py')))
     

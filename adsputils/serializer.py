@@ -46,8 +46,6 @@ dumps = kombu_json.dumps
 
 def loads(s):
     return kombu_json.loads(s, _loads=my_loads)
-    
-    
-        
+
 
 register_args = (kombu_json.dumps, loads, 'application/x-adsmsg', 'utf-8')
