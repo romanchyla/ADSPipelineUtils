@@ -14,12 +14,13 @@ setup(name='adsputils',
           'python-dateutil==2.6.0',
           'DateTime==4.1.1',
           'celery==4.0.2',
-          #'ADSPipelineMsg==1.0.0'
+          #'ADSPipelineMsg==1.0.0',
+          'SQLAlchemy==1.1.6'
           
       ],
-      entry_points={
-            'kombu.serializers': [
-                'adsmsg = adsputils.serializer:register_args'
-            ]
-        }
+      #entry_points={
+      #      'kombu.serializers': [
+      #          'adsmsg = adsputils.serializer:register_args'
+      #      ]
+      #  }
   )
