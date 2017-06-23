@@ -1,10 +1,13 @@
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 import os
 
 
 # hack: we can't use github in the install_requires section; so until we have an official 
 # release of ADSPipelineMsg package available, this has to suffice... 
-os.system('pip install --upgrade git+https://github.com/adsabs/ADSPipelineMsg.git@master')
+os.system('pip install --upgrade git+https://github.com/romanchyla/ADSPipelineMsg.git@master')
 
 setup(name='adsputils',
       version='0.0.1',
