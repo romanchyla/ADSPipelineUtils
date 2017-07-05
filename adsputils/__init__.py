@@ -234,14 +234,17 @@ class ADSCelery(Celery):
         :keyword: local_config - dict, configuration that should be applied
             over the default config (that is loaded from config.py and local_config.py)
         """
-        local_config = None
-        self._config = load_config(extra_frames=1)
+        proj_home = None
+        if 'proj_home' in kwargs:
+            proj_home = kwargs.pop('proj_home')
+        self._config = load_config(extra_frames=1, proj_home=proj_home)
 
+        local_config = None
         if 'local_config' in kwargs and kwargs['local_config']:
             local_config = kwargs.pop('local_config')
             self._config.update(local_config) #our config
             
-        self.logger = setup_logging(app_name, level=self._config.get('LOGGING_LEVEL', 'INFO'))
+        self.logger = setup_logging(app_name, proj_home=proj_home, level=self._config.get('LOGGING_LEVEL', 'INFO'))
         
         # make sure that few important params are set for celery
         if 'broker' not in kwargs:
