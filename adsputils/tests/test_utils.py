@@ -52,7 +52,7 @@ class TestAdsOrcidCelery(unittest.TestCase):
         with patch('adsputils.ConcurrentRotatingFileHandler') as cloghandler:
             adsputils.setup_logging('app')
             f = os.path.abspath(os.path.join(os.path.abspath(__file__), '../../..'))
-            self.assertEqual("call(backupCount=5, encoding=u'UTF-8', filename=u'{filename}/logs/app.log', maxBytes=2097152, mode=u'a')".format(filename=f),
+            self.assertEqual("call(backupCount=10, encoding=u'UTF-8', filename=u'{filename}/logs/app.log', maxBytes=10485760, mode=u'a')".format(filename=f),
                              str(cloghandler.call_args))
             
     

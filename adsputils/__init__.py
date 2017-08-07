@@ -16,6 +16,7 @@ import os
 import logging
 import imp
 import sys
+import time
 from dateutil import parser, tz
 from datetime import datetime
 import inspect
@@ -157,9 +158,15 @@ def setup_logging(name_, level='WARN', proj_home=None):
 
     level = getattr(logging, level)
 
-    logfmt = u'%(levelname)s\t%(process)d [%(asctime)s]:\t%(message)s'
-    datefmt = u'%m/%d/%Y %H:%M:%S'
-    formatter = logging.Formatter(fmt=logfmt, datefmt=datefmt)
+    logfmt = u'%(asctime)s,%(msecs)03d %(levelname)-8s [%(process)d:%(threadName)s:%(filename)s:%(lineno)d] %(message)s'
+    datefmt = u'%Y-%m-%d %H:%M:%S'
+    #formatter = logging.Formatter(fmt=logfmt, datefmt=datefmt)
+    
+    formatter = MultilineMessagesFormatter(fmt=logfmt, datefmt=datefmt)
+    formatter.multiline_marker = ''
+    formatter.multiline_fmt = '     %(message)s'
+    
+    formatter.converter = time.gmtime
     logging_instance = logging.getLogger(name_)
     
     if proj_home:
@@ -173,10 +180,10 @@ def setup_logging(name_, level='WARN', proj_home=None):
 
     fn = os.path.join(fn_path, '{0}.log'.format(name_.split('.log')[0]))
     rfh = ConcurrentRotatingFileHandler(filename=fn,
-                                        maxBytes=2097152,
-                                        backupCount=5,
+                                        maxBytes=10485760,
+                                        backupCount=10,
                                         mode='a',
-                                        encoding='UTF-8')  # 2MB file
+                                        encoding='UTF-8')  # 10MB file
     rfh.setFormatter(formatter)
     logging_instance.handlers = []
     logging_instance.addHandler(rfh)
@@ -384,3 +391,18 @@ class ADSTask(Task):
         # TODO; finish the handling
         #self.logger.error('{0!r} failed: {1!r}'.format(task_id, exc))
         print 'error', exc, task_id, args, kwargs, einfo
+
+
+class MultilineMessagesFormatter(logging.Formatter):
+
+    def format(self, record):
+        """
+        This is mostly the same as logging.Formatter.format except for adding spaces in front
+        of the multiline messages.
+        """
+        s = logging.Formatter.format(self, record)
+        
+        if '\n' in s:
+            return '\n     '.join(s.split('\n'))
+        else:
+            return s
