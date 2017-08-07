@@ -46,7 +46,7 @@ def _get_proj_home(extra_frames=0):
             return x
         x = os.path.abspath(os.path.join(x, '..'))
         max_level -= 1
-    sys.stderr.write("Sorry, cant find the proj home; returning the location of the caller")
+    sys.stderr.write("Sorry, cant find the proj home; returning the location of the caller: %s\n" % d)
     return d
         
 
