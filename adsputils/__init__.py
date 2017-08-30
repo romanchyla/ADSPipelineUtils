@@ -158,7 +158,7 @@ def setup_logging(name_, level=None, proj_home=None):
 
     if level is None:
         config = load_config(extra_frames=1, proj_home=proj_home)
-        level = config.get('LOGGING_LEVEL', 'INFO'))
+        level = config.get('LOGGING_LEVEL', 'INFO')
 
     level = getattr(logging, level)
 
