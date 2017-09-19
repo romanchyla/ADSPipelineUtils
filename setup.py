@@ -16,9 +16,10 @@ setup(name='adsputils',
           'ConcurrentLogHandler==0.9.1',
           'python-dateutil==2.6.0',
           'DateTime==4.1.1',
-          'celery==4.0.2',
+          'celery>=4.1.0',
           #'ADSPipelineMsg==1.0.0',
-          'SQLAlchemy==1.1.6'
+          'SQLAlchemy==1.1.6',
+          'setuptools>=36.2.5',
       ],
       #entry_points={
       #      'kombu.serializers': [
