@@ -65,15 +65,17 @@ class TestAdsOrcidCelery(unittest.TestCase):
         d1 = adsputils.get_date('2009-09-04T01:56:35.450686Z')
         self.assertTrue(d1.tzname() == 'UTC')
         self.assertEqual(d1.isoformat(), '2009-09-04T01:56:35.450686+00:00')
+        self.assertEqual(adsputils.date2solrstamp(d1), '2009-09-04T01:56:35.450686Z')
         
         d2 = adsputils.get_date('2009-09-03T20:56:35.450686-05:00')
         self.assertTrue(d2.tzname() == 'UTC')
         self.assertEqual(d2.isoformat(), '2009-09-04T01:56:35.450686+00:00')
+        self.assertEqual(adsputils.date2solrstamp(d2), '2009-09-04T01:56:35.450686Z')
         
         d3 = adsputils.get_date('2009-09-03T20:56:35.450686')
         self.assertTrue(d3.tzname() == 'UTC')
         self.assertEqual(d3.isoformat(), '2009-09-03T20:56:35.450686+00:00')
-
+        self.assertEqual(adsputils.date2solrstamp(d3), '2009-09-03T20:56:35.450686Z')
 
 
 if __name__ == '__main__':

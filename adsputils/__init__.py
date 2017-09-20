@@ -86,7 +86,17 @@ def get_date(timestr=None):
     return date
 
 
-
+def date2solrstamp(t):
+    """
+    Received datetime object and returns it formatted the way that
+    SOLR likes (variation on the ISO format).
+    
+    @param t: datetime object (we expect it to be in UTC)
+    @return: string
+    """
+    
+    return t.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    
 
 def load_config(proj_home=None, extra_frames=0):
     """
