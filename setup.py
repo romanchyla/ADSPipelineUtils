@@ -19,7 +19,7 @@ setup(name='adsputils',
           'celery>=4.1.0',
           #'ADSPipelineMsg==1.0.0',
           'SQLAlchemy==1.1.6',
-          'setuptools>=36.2.5',
+          'setuptools>=36.5.0',
       ],
       #entry_points={
       #      'kombu.serializers': [
