@@ -10,7 +10,7 @@ import os
 os.system('pip install --upgrade git+https://github.com/adsabs/ADSPipelineMsg.git@master')
 
 setup(name='adsputils',
-      version='0.0.1',
+      version='0.0.2',
       packages=['adsputils'],
       install_requires=[
           'ConcurrentLogHandler==0.9.1',
