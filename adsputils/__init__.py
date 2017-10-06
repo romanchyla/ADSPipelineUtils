@@ -6,6 +6,7 @@ project, and so do not belong to anything specific.
 
 from __future__ import absolute_import, unicode_literals
 from celery import Celery, Task
+from celery.exceptions import SoftTimeLimitExceeded
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import load_only as _load_only
@@ -24,6 +25,7 @@ from cloghandler import ConcurrentRotatingFileHandler
 from kombu.serialization import register, registry
 from kombu import Exchange, BrokerConnection
 from .serializer import register_args
+import random
 
 local_zone = tz.tzlocal()
 utc_zone = tz.tzutc()
@@ -394,18 +396,46 @@ class ADSCelery(Celery):
         """Our modification to the Celery.task."""
         if 'base' not in opts:
             opts['base'] = ADSTask
+        if 'max_retries' not in opts:
+            opts['max_retries'] = 1
         return Celery.task(self, *args, **opts)
 
 
-
+    
+    def attempt_recovery(self, task, args=None, kwargs=None, einfo=None, retval=None):
+        """Here you can try to recover from errors that Celery couldn't deal with.
+        
+        Example:
+        
+        if isinstance(retval, SoftTimeLimitExceeded):
+            # half the number of processed objects
+            first_half, second_half = args[0][0:len(args[0])/2], args[0][len(args[2]/2):]
+            # resubmit
+            args[0] = first_half
+            task.apply_async(args=args, kwargs=kwargs)
+            args[0] = second_half
+            task.apply_async(args=args, kwargs=kwargs)
+            
+        Returns: are ignored
+        """
+        pass
 
 
 class ADSTask(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        # TODO; finish the handling
-        #self.logger.error('{0!r} failed: {1!r}'.format(task_id, exc))
-        print 'error', exc, task_id, args, kwargs, einfo
+        
+        if self.request.retries < self.max_retries:
+            self.app.logger.debug('Retrying %s because of exc=%s', task_id, exc)
+            self.retry(countdown=2 ** self.request.retries + random.randint(1, 10), exc=exc)
+        
+        self.app.logger.error('Task=%s failed.\nargs=%s\nkwargs=%s\ntrace=%s', task_id, args, kwargs, einfo)
+        #print 'Task=%s failed.\nargs=%s\nkwargs=%s\ntrace=%s' % (task_id, args, kwargs, einfo)
 
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        if status == 'FAILURE' and hasattr(self.app, 'attempt_recovery'):
+            self.app.attempt_recovery(self, retval=retval, args=args, kwargs=kwargs, einfo=einfo)
+            
 
 class MultilineMessagesFormatter(logging.Formatter):
 
