@@ -266,7 +266,8 @@ class ADSCelery(Celery):
         if 'local_config' in kwargs and kwargs['local_config']:
             local_config = kwargs.pop('local_config')
             self._config.update(local_config) #our config
-
+        if not proj_home:
+            proj_home = self._config.get('PROJ_HOME', None)
         self.logger = setup_logging(app_name, proj_home=proj_home, level=self._config.get('LOGGING_LEVEL', 'INFO'))
 
         # make sure that few important params are set for celery
