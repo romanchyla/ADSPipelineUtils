@@ -3,6 +3,8 @@
 import adsputils
 import unittest
 import os
+import json
+from inspect import currentframe, getframeinfo
 
 def _read_file(fpath):
     with open(fpath, 'r') as fi:
@@ -17,18 +19,35 @@ class TestInit(unittest.TestCase):
             os.remove(foo_log)
         logger = adsputils.setup_logging('foo.bar')
         logger.warn('first')
+        frameinfo = getframeinfo(currentframe())
+        
         logger.handlers[0].stream.flush()
         #print foo_log
         self.assertTrue(os.path.exists(foo_log))
         c = _read_file(foo_log)
-        self.assertTrue('test_init.py:19] first' in c)
+        j = json.loads(c)
+        
+        self.assertEqual(j['message'], 'first')
+        self.assertTrue('hostname' in j)
+ 
+        # verify warning has filename and linenumber
+        self.assertEqual(os.path.basename(frameinfo.filename), j['filename'])
+        self.assertEqual(j['lineno'], frameinfo.lineno - 1)
                     
         # now multiline message
-        logger.warn('second\nthird')
+        logger.warn(u'second\nthird')
         logger.warn('last')
         c = _read_file(foo_log)
-        #print c
-        self.assertTrue('second\n     third' in c)
+        
+        found = False
+        for x in c.strip().split('\n'):
+            j = json.loads(x)
+            self.assertTrue(j)
+            if j['message'] == u'second\nthird':
+                found = True
+                
+        self.assertTrue(found)
+        
         
 
 if __name__ == '__main__':
