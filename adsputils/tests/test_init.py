@@ -4,6 +4,7 @@ import adsputils
 import unittest
 import os
 import json
+import time
 from inspect import currentframe, getframeinfo
 
 def _read_file(fpath):
@@ -33,20 +34,26 @@ class TestInit(unittest.TestCase):
         # verify warning has filename and linenumber
         self.assertEqual(os.path.basename(frameinfo.filename), j['filename'])
         self.assertEqual(j['lineno'], frameinfo.lineno - 1)
-                    
+        
+        time.sleep(0.01)
         # now multiline message
         logger.warn(u'second\nthird')
         logger.warn('last')
         c = _read_file(foo_log)
         
         found = False
+        msecs = False
         for x in c.strip().split('\n'):
             j = json.loads(x)
             self.assertTrue(j)
             if j['message'] == u'second\nthird':
                 found = True
+            t = adsputils.get_date(j['asctime'])
+            if t.microsecond > 0:
+                msecs = True
                 
         self.assertTrue(found)
+        self.assertTrue(msecs)
         
         
 

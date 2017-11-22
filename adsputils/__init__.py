@@ -30,11 +30,13 @@ import random
 from multiprocessing.util import register_after_fork
 from pythonjsonlogger import jsonlogger
 from celery.utils.log import PY3, string_t, text_t, colored, safe_str
-
+from logging import Formatter
 
 
 local_zone = tz.tzlocal()
 utc_zone = tz.tzutc()
+
+TIMESTAMP_FMT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 @signals.after_setup_logger.connect
@@ -51,7 +53,7 @@ def on_celery_setup_logging(**kwargs):
         formatter = handler.formatter
         handler.formatter = get_json_formatter(use_color=colorize, 
                                     logfmt=formatter._fmt, 
-                                    datefmt="%Y-%m-%dT%H:%M:%SZ%z")
+                                    datefmt=TIMESTAMP_FMT)
         
     logger.debug('ADSPipelineUtils reconfigured %s to use JSONFormatter', logger)
         
@@ -124,7 +126,7 @@ def date2solrstamp(t):
     @return: string
     """
     
-    return t.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return t.strftime(TIMESTAMP_FMT)
     
 
 def load_config(proj_home=None, extra_frames=0):
@@ -466,22 +468,33 @@ class ADSTask(Task):
             self.app.attempt_recovery(self, retval=retval, args=args, kwargs=kwargs, einfo=einfo)
             
 
-class MultilineMessagesFormatter(logging.Formatter):
-
+class MultilineMessagesFormatter(Formatter):
+    converter = time.gmtime
     def format(self, record):
         """
         This is mostly the same as logging.Formatter.format except for adding spaces in front
         of the multiline messages.
         """
-        s = logging.Formatter.format(self, record)
+        s = Formatter.format(self, record)
 
         if '\n' in s:
             return '\n     '.join(s.split('\n'))
         else:
             return s
+    
+    def formatTime(self, record, datefmt=None):
+        """logging uses time.strftime which doesn't understand
+        how to add microsecs. datetime understands that. so we 
+        have to work around the old time.strftime here."""
+        if datefmt:
+            s = Formatter.formatTime(self, record, datefmt)
+            return s.replace('%f', '%03d' % (record.msecs))
+        else:
+            return Formatter.formatTime(self, record, datefmt) # default ISO8601
 
 
 class JsonFormatter(jsonlogger.JsonFormatter, object):
+    converter = time.gmtime
     #: Loglevel -> Color mapping.
     COLORS = colored().names
     colors = {
@@ -492,7 +505,7 @@ class JsonFormatter(jsonlogger.JsonFormatter, object):
     }
     def __init__(self,
                  fmt="%(asctime) %(name) %(processName) %(filename)  %(funcName) %(levelname) %(lineno) %(module) %(threadName) %(message)",
-                 datefmt="%Y-%m-%dT%H:%M:%SZ%z",
+                 datefmt=TIMESTAMP_FMT,
                  use_color=False,
                  extra={}, *args, **kwargs):
         self._extra = extra
@@ -504,7 +517,7 @@ class JsonFormatter(jsonlogger.JsonFormatter, object):
         if "asctime" in log_record:
             log_record["timestamp"] = log_record["asctime"]
         else:
-            log_record["timestamp"] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ%z")
+            log_record["timestamp"] = datetime.datetime.utcnow().strftime(TIMESTAMP_FMT)
 
         if self._extra is not None:
             for key, value in self._extra.items():
@@ -519,7 +532,17 @@ class JsonFormatter(jsonlogger.JsonFormatter, object):
         if isinstance(r, str) and not PY3:
             return safe_str(r)
         return r
-
+    
+    def formatTime(self, record, datefmt=None):
+        """logging uses time.strftime which doesn't understand
+        how to add microsecs. datetime understands that. so we 
+        have to work around the old time.strftime here."""
+        if datefmt:
+            s = Formatter.formatTime(self, record, datefmt)
+            return s.replace('%f', '%03d' % (record.msecs))
+        else:
+            return Formatter.formatTime(self, record, datefmt) # default ISO8601
+        
     def format(self, record):
         msg = jsonlogger.JsonFormatter.format(self, record)
         color = self.colors.get(record.levelname)
@@ -554,6 +577,6 @@ class JsonFormatter(jsonlogger.JsonFormatter, object):
 
 def get_json_formatter(use_color=False, 
                        logfmt = u'%(asctime)s,%(msecs)03d %(levelname)-8s [%(process)d:%(threadName)s:%(filename)s:%(lineno)d] %(message)s',
-                       datefmt = "%Y-%m-%dT%H:%M:%SZ%z"):
+                       datefmt = TIMESTAMP_FMT):
     return JsonFormatter(logfmt, datefmt, extra={"hostname":socket.gethostname()}, use_color=use_color)
     
