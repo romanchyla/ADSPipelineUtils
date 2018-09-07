@@ -8,7 +8,7 @@ from __future__ import absolute_import, unicode_literals
 from celery import Celery, Task, signals
 from celery.exceptions import SoftTimeLimitExceeded
 from contextlib import contextmanager
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, types, TIMESTAMP
 from sqlalchemy.orm import load_only as _load_only
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
@@ -608,3 +608,40 @@ def u2asc(input):
         output = output.encode('utf-8')
 
     return output
+
+
+class UTCDateTime(types.TypeDecorator):
+    """Value type for SQLAlachemy to be used for UTC datetime
+    example usage (in your models.py)
+    
+    from sqlalchemy.ext.declarative import declarative_base
+    from adsmutils import get_date, UTCDateTime
+    Base = declarative_base()
+    
+    class Foo(Base):
+        __tablename__ = 'foo'
+        id = Column(Integer, primary_key=True)
+        created = Column(UTCDateTime, default=get_date)
+        updated = Column(UTCDateTime)
+    
+    """
+    
+    impl = TIMESTAMP(timezone=True)
+    
+    def process_bind_param(self, value, engine):
+        if isinstance(value, basestring):
+            return get_date(value).astimezone(utc_zone)
+        elif value is not None:
+            if value.tzname() is None:
+                return value.replace(tzinfo=local_zone).astimezone(tz=utc_zone)
+            return value.astimezone(tz=utc_zone) # will raise Error if not datetime
+
+
+    def process_result_value(self, value, engine):
+        if value is not None:
+            if value.tzname() is None:
+                # sqlite seems to save strings and then loads them without local timezone
+                if 'sqlite' in engine.name:
+                    return value.replace(tzinfo=utc_zone)
+                return value.replace(tzinfo=local_zone).astimezone(tz=utc_zone)
+            return value.astimezone(tz=utc_zone)

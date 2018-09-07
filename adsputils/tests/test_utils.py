@@ -9,7 +9,8 @@ import unittest
 import json
 import inspect
 from mock import patch
-
+from sqlalchemy.ext.declarative import declarative_base
+import sqlalchemy as sa
 import adsputils
 
 class TestAdsOrcidCelery(unittest.TestCase):
@@ -78,5 +79,54 @@ class TestAdsOrcidCelery(unittest.TestCase):
         self.assertEqual(adsputils.date2solrstamp(d3), '2009-09-03T20:56:35.450686Z')
 
 
+class TestDbType(unittest.TestCase):
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.app = adsputils.ADSCelery('test', local_config=\
+            {
+            'SQLALCHEMY_URL': 'sqlite:///',
+            'SQLALCHEMY_ECHO': False
+            })
+    
+    
+    def tearDown(self):
+        unittest.TestCase.tearDown(self)
+        self.app.close_app()
+        
+    def test_utcdatetime_type(self):
+        
+        base = declarative_base()
+        class Test(base):
+            __tablename__ = 'testdate'
+            id = sa.Column(sa.Integer, primary_key=True)
+            created = sa.Column(adsputils.UTCDateTime, default=adsputils.get_date)
+            updated = sa.Column(adsputils.UTCDateTime)
+        base.metadata.bind = self.app._engine
+        base.metadata.create_all()
+        
+        with self.app.session_scope() as session:
+            session.add(Test())
+            m = session.query(Test).first()
+            assert m.created
+            assert m.created.tzname() == 'UTC'
+            assert '+00:00' in str(m.created)
+            
+            current = adsputils.get_date('2018-09-07T20:22:02.249389+00:00')
+            m.updated = current
+            session.commit()
+            
+            m = session.query(Test).first()
+            assert str(m.updated) == str(current)
+            
+            t = adsputils.get_date()
+            m.created = t
+            session.commit()
+            m = session.query(Test).first()
+            assert m.created == t
+            
+        # not ideal, but db exists in memory anyways...
+        base.metadata.drop_all()
+        
+        
 if __name__ == '__main__':
     unittest.main()
